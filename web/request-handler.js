@@ -1,7 +1,9 @@
 var path = require('path');
 var archive = require('../helpers/archive-helpers');
+var url = require('url');
 // require more modules/folders here!
 var httpHelper = require('./http-helpers.js');
+var _ = require('underscore');
 
 exports.handleRequest = function (req, res) {
 
@@ -15,7 +17,7 @@ exports.handleRequest = function (req, res) {
       })
     } else if(req.method === "OPTIONS"){
       //CALL OPTIONS function
-    } else{
+    } else {
       httpHelper.writeResponse(res, '', 404);
     }
   }
@@ -25,9 +27,24 @@ exports.handleRequest = function (req, res) {
 
 var getResponse = function(req, res){
   //call writehead function
-  httpHelper.serveAssets(res, archive.paths.siteAssets + '/index.html', function(res, data){
-    httpHelper.writeResponse(res, data, 200);
-  })
+  var urlParsed = url.parse(req.url).pathname;
+  if (urlParsed === '' || urlParsed === '/') {
+    httpHelper.serveAssets(res, archive.paths.siteAssets + '/index.html', function(res, data){
+      httpHelper.writeResponse(res, data, 200);
+    })
+  } else {
+    //check the archives
+    archive.isUrlArchived(urlParsed.slice(1), function(files) {
+      if (_.indexOf(files, urlParsed.slice(1)) > -1) {
+        httpHelper.serveAssets(res, archive.paths.archivedSites + urlParsed, function(res, data){
+          httpHelper.writeResponse(res, data, 200);
+        });
+      } else {
+        httpHelper.writeResponse(res, 'Page not found', 404);
+      }
+    });
+    //if not in archives
+  }
   //if list contains data 
   //if list exists in archive
     //render page
@@ -37,20 +54,21 @@ var getResponse = function(req, res){
 
 var postResponse = function(res, data){
   // turns buffer object to our url string
-  var urlString = data.toString('utf8').slice(4);
+  var urlString = JSON.parse(data).url;
   //if list contains data 
-  archive.readListOfUrls(function(data){
-    console.log("data: ",data, "url string: ", urlString);
-    if(archive.isUrlInList(urlString, data)){
+  archive.isUrlInList(urlString, function(urls){
+    if (_.indexOf(urls, urlString) > -1){
       //check if it is in the archive
-      archive.isUrlArchived(urlString, function() {
+      archive.isUrlArchived(urlString, function(files) {
         //if it is archived, serve that request
-        httpHelper.serveAssets(res, archive.paths.archivedSites + '/' + urlString, function(res, data){
-          httpHelper.writeResponse(res, data, 302);
-        });
-      }, function() {
+        if (_.indexOf(files, urlString) > -1){
+          httpHelper.serveAssets(res, archive.paths.archivedSites + '/' + urlString, function(res, data){
+            httpHelper.writeResponse(res, data, 302);
+          });
+        } else {
         //if not, we want to serve the loading page
-        httpHelper.serveLoadingPage(res);
+          httpHelper.serveLoadingPage(res);
+        }
       });
     } else {
       //if not, add to list and redirect to the loading site
@@ -59,7 +77,7 @@ var postResponse = function(res, data){
       });
     }
   //if not, add data to list
-  })
+  });
 }
 
 var collectData = function(req, callback){
