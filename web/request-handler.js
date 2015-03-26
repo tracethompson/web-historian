@@ -1,7 +1,6 @@
 var path = require('path');
 var archive = require('../helpers/archive-helpers');
 var url = require('url');
-// require more modules/folders here!
 var httpHelper = require('./http-helpers.js');
 var _ = require('underscore');
 
@@ -12,11 +11,9 @@ exports.handleRequest = function (req, res) {
     if(req.method === 'GET'){
       getResponse(req, res);
     } else if(req.method === "POST"){
-      collectData(req, function(data){
+      httpHelper.collectData(req, function(data){
         postResponse(res, data);
-      })
-    } else if(req.method === "OPTIONS"){
-      //CALL OPTIONS function
+      }) 
     } else {
       httpHelper.writeResponse(res, '', 404);
     }
@@ -43,18 +40,12 @@ var getResponse = function(req, res){
         httpHelper.writeResponse(res, 'Page not found', 404);
       }
     });
-    //if not in archives
   }
-  //if list contains data 
-  //if list exists in archive
-    //render page
-  //if not, render loading page
-//if not, add data to list
 }
 
 var postResponse = function(res, data){
   // turns buffer object to our url string
-  var urlString = JSON.parse(data).url;
+  var urlString = data.slice(4);
   //if list contains data 
   archive.isUrlInList(urlString, function(urls){
     if (_.indexOf(urls, urlString) > -1){
@@ -76,16 +67,6 @@ var postResponse = function(res, data){
         httpHelper.serveLoadingPage(res);
       });
     }
-  //if not, add data to list
   });
 }
 
-var collectData = function(req, callback){
-  var dataStorage = "";
-  req.on('data', function(data){
-    dataStorage += data;
-  })
-  req.on('end', function(){
-    callback(dataStorage)
-  })
-}

@@ -31,4 +31,14 @@ exports.serveLoadingPage = function(res){
     exports.writeResponse(res, data, 302);
   });
 }
+
+exports.collectData = function(req, callback){
+  var dataStorage = "";
+  req.on('data', function(data){
+    dataStorage += data;
+  })
+  req.on('end', function(){
+    callback(dataStorage)
+  })
+}
 // As you progress, keep thinking about what helper functions you can put here!
