@@ -20,9 +20,6 @@ exports.handleRequest = function (req, res) {
     }
   }
 
-
-
-
   router(req, res);
 };
 
@@ -45,14 +42,20 @@ var postResponse = function(res, data){
   archive.readListOfUrls(function(data){
     console.log("data: ",data, "url string: ", urlString);
     if(archive.isUrlInList(urlString, data)){
-      //load page
-
+      //check if it is in the archive
+      archive.isUrlArchived(urlString, function() {
+        //if it is archived, serve that request
+        httpHelper.serveAssets(res, archive.paths.archivedSites + '/' + urlString, function(res, data){
+          httpHelper.writeResponse(res, data, 302);
+        });
+      }, function() {
+        //if not, we want to serve the loading page
+        httpHelper.serveLoadingPage(res);
+      });
     } else {
       //if not, add to list and redirect to the loading site
       archive.addUrlToList(urlString, function(){
-        httpHelper.serveAssets(res, archive.paths.siteAssets + '/loading.html', function(res, data){
-          httpHelper.writeResponse(res, data, 302);
-        });
+        httpHelper.serveLoadingPage(res);
       });
     }
   //if not, add data to list

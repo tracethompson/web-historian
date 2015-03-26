@@ -26,4 +26,9 @@ exports.writeResponse = function(res, data, status){
   res.end();
 }
 
+exports.serveLoadingPage = function(res){
+  exports.serveAssets(res, archive.paths.siteAssets + '/loading.html', function(res, data){
+    exports.writeResponse(res, data, 302);
+  });
+}
 // As you progress, keep thinking about what helper functions you can put here!
