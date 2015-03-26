@@ -58,7 +58,9 @@ exports.isUrlArchived = function(urlString, callback){
 };
 
 exports.downloadUrls = function(urlArray){
+  console.log(urlArray);
   _.each(urlArray, function(url){
+    if (url === '') { return; }
     exports.isUrlArchived(url, function(err, files){
       if(_.indexOf(files, url) === -1){
         exports.reqSite(url);
@@ -71,16 +73,16 @@ exports.reqSite = function(url){
   var options = {
     host: url,
     port: 80,
-    path: '/index.html'
   };
 
   http.get(options, function(res){
+    console.log('in result function');
     httpHelper.collectData(res, function(data){
-      fs.writeFile('archives/sites/'+url, data, function(err){
-        if(err) throw err;
-        console.log('file saved!');
+      fs.writeFile(exports.paths.archivedSites+'/'+url, data, function(err){
+        if(err) console.log(err);
+        else console.log('file saved!');
       })
     })
-  }).on('error', function(e){ if(e) throw e; })
+  }).on('error', function(e){ console.log(url); console.log(e); })
 }
 
